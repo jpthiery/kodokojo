@@ -22,6 +22,7 @@ import akka.util.Timeout;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.inject.name.Named;
+import io.kodokojo.config.ApplicationConfig;
 import io.kodokojo.endpoint.dto.UserCreationDto;
 import io.kodokojo.endpoint.dto.UserDto;
 import io.kodokojo.endpoint.dto.UserProjectConfigIdDto;
@@ -57,6 +58,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static akka.pattern.Patterns.ask;
+import static java.util.Objects.requireNonNull;
 import static spark.Spark.*;
 
 public class UserSparkEndpoint extends AbstractSparkEndpoint {
@@ -72,20 +74,13 @@ public class UserSparkEndpoint extends AbstractSparkEndpoint {
     private final ReCaptchaService reCaptchaService;
 
     @Inject
-    public UserSparkEndpoint(UserAuthenticator<SimpleCredential> userAuthenticator, @Named(EndpointActor.NAME) ActorRef akkaEndpoint, UserRepository userFetcher, ProjectRepository projectFetcher, ReCaptchaService reCaptchaService) {
-        super(userAuthenticator);
-        if (akkaEndpoint == null) {
-            throw new IllegalArgumentException("akkaEndpoint must be defined.");
-        }
-        if (userFetcher == null) {
-            throw new IllegalArgumentException("userFetcher must be defined.");
-        }
-        if (projectFetcher == null) {
-            throw new IllegalArgumentException("projectFetcher must be defined.");
-        }
-        if (reCaptchaService == null) {
-            throw new IllegalArgumentException("reCaptchaService must be defined.");
-        }
+    public UserSparkEndpoint(UserAuthenticator<SimpleCredential> userAuthenticator, ApplicationConfig applicationConfig, @Named(EndpointActor.NAME) ActorRef akkaEndpoint, UserRepository userFetcher, ProjectRepository projectFetcher, ReCaptchaService reCaptchaService) {
+        super(userAuthenticator, applicationConfig);
+        requireNonNull(akkaEndpoint, "akkaEndpoint must be defined.");
+        requireNonNull(userFetcher, "userFetcher must be defined.");
+        requireNonNull(projectFetcher, "projectFetcher must be defined.");
+        requireNonNull(reCaptchaService, "reCaptchaService must be defined.");
+
         this.akkaEndpoint = akkaEndpoint;
         this.userFetcher = userFetcher;
         this.projectFetcher = projectFetcher;

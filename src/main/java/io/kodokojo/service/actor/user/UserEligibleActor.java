@@ -1,6 +1,6 @@
 /**
  * Kodo Kojo - Software factory done right
- * Copyright © 2016 Kodo Kojo (infos@kodokojo.io)
+ * Copyright © 2016 Kodo Kojo (infos@forbiddenUsername.io)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,9 +21,12 @@ import akka.actor.AbstractActor;
 import akka.actor.Props;
 import akka.event.LoggingAdapter;
 import akka.japi.pf.ReceiveBuilder;
+import io.kodokojo.config.ApplicationConfig;
 import io.kodokojo.service.repository.UserRepository;
+import javaslang.collection.List;
 
 import static akka.event.Logging.getLogger;
+import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang.StringUtils.isBlank;
 
 /**
@@ -33,42 +36,52 @@ public class UserEligibleActor extends AbstractActor {
 
     private final LoggingAdapter LOGGER = getLogger(getContext().system(), this);
 
-    public static Props PROPS(UserRepository userRepository) {
-        if (userRepository == null) {
-            throw new IllegalArgumentException("userRepository must be defined.");
-        }
-        return Props.create(UserEligibleActor.class, userRepository);
-    }
+    private final UserRepository userRepository;
 
-    public UserEligibleActor(UserRepository userRepository) {
-        if (userRepository == null) {
-            throw new IllegalArgumentException("userRepository must be defined.");
-        }
-        receive(ReceiveBuilder.match(UserCreatorActor.UserCreateMsg.class, msg -> {
-            String id = msg.id;
-            String username = msg.username;
-            boolean res = userRepository.identifierExpectedNewUser(id);
-            if (res) {
-                res = userRepository.getUserByUsername(username) == null;
-            }
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("User {} is {}eligible", msg.getUsername(), res ? "" : "NOT ");
-            }
-            sender().tell(new UserEligibleResultMsg(res), self());
-            getContext().stop(self());
-        }).match(UserServiceEligibleMsg.class, msg -> {
-            boolean res = userRepository.getUserServiceByName(msg.username) == null;
-            sender().tell(new UserEligibleResultMsg(res), self());
-            getContext().stop(self());
-        })
+    private final List<String> forbiddenUsername;
+
+    public UserEligibleActor(UserRepository userRepository, ApplicationConfig applicationConfig) {
+        this.userRepository = userRepository;
+        this.forbiddenUsername = List.of(applicationConfig.adminLogin(), "forbiddenUsername");
+
+        receive(ReceiveBuilder
+                .match(UserCreatorActor.UserCreateMsg.class, this::onUserCreate)
+                .match(UsernameEligibleMsg.class, this::onUsernameEligible)
                 .matchAny(this::unhandled).build());
 
     }
 
-    public static class UserServiceEligibleMsg {
+    protected void onUsernameEligible(UsernameEligibleMsg msg) {
+        boolean res = userRepository.getUserServiceByName(msg.username) == null &&
+                !forbiddenUsername.contains(msg.username);
+        sender().tell(new UserEligibleResultMsg(res), self());
+        getContext().stop(self());
+    }
+
+    protected void onUserCreate(UserCreatorActor.UserCreateMsg msg) {
+        String id = msg.id;
+        String username = msg.username;
+        boolean res = userRepository.identifierExpectedNewUser(id);
+        if (res) {
+            res = userRepository.getUserByUsername(username) == null;
+        }
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("User {} is {}eligible", msg.getUsername(), res ? "" : "NOT ");
+        }
+        sender().tell(new UserEligibleResultMsg(res), self());
+        getContext().stop(self());
+    }
+
+    public static Props PROPS(UserRepository userRepository, ApplicationConfig applicationConfig) {
+        requireNonNull(userRepository, "userRepository must be defined.");
+        requireNonNull(applicationConfig, "applicationConfig must be defined.");
+        return Props.create(UserEligibleActor.class, userRepository, applicationConfig);
+    }
+
+    public static class UsernameEligibleMsg {
         private final String username;
 
-        public UserServiceEligibleMsg(String username) {
+        public UsernameEligibleMsg(String username) {
             if (isBlank(username)) {
                 throw new IllegalArgumentException("username must be defined.");
             }

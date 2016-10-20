@@ -22,6 +22,7 @@ import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.event.LoggingAdapter;
 import akka.japi.pf.ReceiveBuilder;
+import io.kodokojo.config.ApplicationConfig;
 import io.kodokojo.model.Entity;
 import io.kodokojo.model.User;
 import io.kodokojo.service.RSAUtils;
@@ -46,9 +47,10 @@ public class UserCreatorActor extends AbstractActor {
 
     private final LoggingAdapter LOGGER = getLogger(getContext().system(), this);
 
-    public static Props PROPS(UserRepository userRepository) {
+    public static Props PROPS(UserRepository userRepository, ApplicationConfig applicationConfig) {
         requireNonNull(userRepository, "userRepository must be defined.");
-        return Props.create(UserCreatorActor.class, userRepository);
+        requireNonNull(applicationConfig, "applicationConfig must be defined.");
+        return Props.create(UserCreatorActor.class, userRepository, applicationConfig);
     }
 
     private final UserRepository userRepository;
@@ -65,13 +67,13 @@ public class UserCreatorActor extends AbstractActor {
 
     private ActorRef originalActor;
 
-    public UserCreatorActor(UserRepository userRepository) {
+    public UserCreatorActor(UserRepository userRepository, ApplicationConfig applicationConfig) {
         this.userRepository = userRepository;
         receive(ReceiveBuilder.match(UserCreateMsg.class, u -> {
             originalActor = sender();
             message = u;
             getContext().actorOf(UserGenerateSecurityData.PROPS()).tell(new UserGenerateSecurityData.GenerateSecurityMsg(), self());
-            getContext().actorOf(UserEligibleActor.PROPS(userRepository)).tell(u, self());
+            getContext().actorOf(UserEligibleActor.PROPS(userRepository, applicationConfig)).tell(u, self());
             if (StringUtils.isBlank(u.entityId)) {
                 Entity entity = new Entity(u.email);
                 getContext().actorSelection(EndpointActor.ACTOR_PATH).tell(new EntityCreatorActor.EntityCreateMsg(entity), self());

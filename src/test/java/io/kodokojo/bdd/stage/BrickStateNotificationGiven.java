@@ -210,6 +210,17 @@ public class BrickStateNotificationGiven<SELF extends BrickStateNotificationGive
                     public long sslCaDuration() {
                         return -1;
                     }
+
+                    @Override
+                    public String adminLogin() {
+                        return "admin";
+                    }
+
+                    @Override
+                    public String adminPassword() {
+                        return "admin";
+                    }
+
                 });
                 bind(EmailConfig.class).toInstance(new EmailConfig() {
                     @Override

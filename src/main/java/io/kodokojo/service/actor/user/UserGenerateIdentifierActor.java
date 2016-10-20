@@ -22,14 +22,13 @@ import akka.actor.Props;
 import akka.japi.pf.ReceiveBuilder;
 import io.kodokojo.service.repository.UserRepository;
 
+import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang.StringUtils.isBlank;
 
 public class UserGenerateIdentifierActor extends AbstractActor {
 
     public static Props PROPS(UserRepository userRepository) {
-        if (userRepository == null) {
-            throw new IllegalArgumentException("userRepository must be defined.");
-        }
+        requireNonNull(userRepository, "userRepository must be defined.");
         return Props.create(UserGenerateIdentifierActor.class, userRepository);
     }
 

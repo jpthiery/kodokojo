@@ -23,12 +23,15 @@ import io.kodokojo.model.ProjectConfiguration;
 
 import java.io.Serializable;
 import java.util.Map;
+import java.util.Set;
 
 public interface ProjectRepository extends ProjectFetcher {
 
     boolean projectNameIsValid(String projectName);
 
     String addProjectConfiguration(ProjectConfiguration projectConfiguration);
+
+    Set<ProjectConfiguration> getAllProjectConfigurations();
 
     String addProject(Project project, String projectConfigurationIdentifier);
 

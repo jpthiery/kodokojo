@@ -44,6 +44,8 @@ public class RedisProjectStore extends AbstractRedisStore implements ProjectStor
 
     public static final String PROJECT_PREFIX = "project/";
 
+    public static final String PROJECTCONFIG_ID_LIST_PREFIX = "projectConfigurationIdList/";
+
     private static final String PROJECTCONFIGURATION_ID_KEY = "projectConfigurationId";
 
     public static final String PROJECTCONFIGURATION_PREFIX = "projectConfiguration/";
@@ -53,7 +55,6 @@ public class RedisProjectStore extends AbstractRedisStore implements ProjectStor
     public static final String USER_TO_PROJECTCONFIGS_PREFIX = "userToProjectConfigurations/";
 
     private static final Pattern PROJECT_NAME_PATTERN = Pattern.compile("([a-zA-Z0-9\\-_]){4,20}");
-
 
     public RedisProjectStore(Key key, String host, int port) {
         super(key, host, port);
@@ -96,7 +97,17 @@ public class RedisProjectStore extends AbstractRedisStore implements ProjectStor
             throw new IllegalArgumentException("ProjectConfiguration " + projectConfiguration.getName() + " already exist");
         }
         String identifier = generateId();
+        try (Jedis jedis = pool.getResource()) {
+            jedis.sadd(PROJECTCONFIG_ID_LIST_PREFIX, identifier);
+        }
         return writeProjectConfiguration(new ProjectConfigurationStoreModel(projectConfiguration.getEntityIdentifier(), identifier, projectConfiguration.getName(), projectConfiguration.getUserService(), projectConfiguration.getAdmins(), projectConfiguration.getStackConfigurations(), projectConfiguration.getUsers()));
+    }
+
+    @Override
+    public Set<String> getAllProjectConfigurationId() {
+        try(Jedis jedis = pool.getResource()) {
+            return jedis.smembers(PROJECTCONFIG_ID_LIST_PREFIX);
+        }
     }
 
     @Override

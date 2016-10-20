@@ -18,6 +18,7 @@
 package io.kodokojo.endpoint;
 
 import io.kodokojo.brick.BrickFactory;
+import io.kodokojo.config.ApplicationConfig;
 import io.kodokojo.endpoint.dto.BrickConfigDto;
 import io.kodokojo.model.BrickConfiguration;
 import io.kodokojo.service.authentification.SimpleCredential;
@@ -34,8 +35,8 @@ public class BrickSparkEndpoint extends AbstractSparkEndpoint {
     private final BrickFactory brickFactory;
 
     @Inject
-    public BrickSparkEndpoint(UserAuthenticator<SimpleCredential> userAuthenticator, BrickFactory brickFactory) {
-        super(userAuthenticator);
+    public BrickSparkEndpoint(UserAuthenticator<SimpleCredential> userAuthenticator, ApplicationConfig applicationConfig, BrickFactory brickFactory) {
+        super(userAuthenticator, applicationConfig);
         if (brickFactory == null) {
             throw new IllegalArgumentException("brickFactory must be defined.");
         }

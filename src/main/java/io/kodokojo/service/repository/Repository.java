@@ -28,6 +28,7 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
@@ -113,6 +114,16 @@ public class Repository implements UserRepository, ProjectRepository, EntityRepo
             throw new IllegalArgumentException("projectConfiguration must be defined.");
         }
         return projectStore.addProjectConfiguration(new ProjectConfigurationStoreModel(projectConfiguration));
+    }
+
+    @Override
+    public Set<ProjectConfiguration> getAllProjectConfigurations() {
+        Set<String> projectConfigurationIds = projectStore.getAllProjectConfigurationId();
+        Set<ProjectConfiguration> res = projectConfigurationIds.stream()
+                .map(projectStore::getProjectConfigurationById)
+                .map(this::convertToProjectConfiguration)
+                .collect(Collectors.toSet());
+        return res;
     }
 
     @Override

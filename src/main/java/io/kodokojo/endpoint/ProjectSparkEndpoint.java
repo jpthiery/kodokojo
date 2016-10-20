@@ -25,6 +25,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.google.inject.name.Named;
+import io.kodokojo.config.ApplicationConfig;
 import io.kodokojo.endpoint.dto.ProjectConfigDto;
 import io.kodokojo.endpoint.dto.ProjectCreationDto;
 import io.kodokojo.endpoint.dto.ProjectDto;
@@ -48,6 +49,8 @@ import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import static akka.pattern.Patterns.ask;
 import static java.util.Objects.requireNonNull;
@@ -62,8 +65,8 @@ public class ProjectSparkEndpoint extends AbstractSparkEndpoint {
     private final ProjectRepository projectFetcher;
 
     @Inject
-    public ProjectSparkEndpoint(UserAuthenticator<SimpleCredential> userAuthenticator, @Named(EndpointActor.NAME) ActorRef akkaEndpoint, ProjectRepository projectFetcher) {
-        super(userAuthenticator);
+    public ProjectSparkEndpoint(UserAuthenticator<SimpleCredential> userAuthenticator, ApplicationConfig applicationConfig, @Named(EndpointActor.NAME) ActorRef akkaEndpoint, ProjectRepository projectFetcher) {
+        super(userAuthenticator, applicationConfig);
         requireNonNull(akkaEndpoint, "akkaEndpoint must be defined.");
         requireNonNull(projectFetcher, "projectFetcher must be defined.");
         this.projectFetcher = projectFetcher;
@@ -113,6 +116,25 @@ public class ProjectSparkEndpoint extends AbstractSparkEndpoint {
 
             halt(403, "Your are not admin of project configuration '" + projectConfiguration.getName() + "'.");
             return "";
+        }, jsonResponseTransformer);
+
+        get(BASE_API + "/projectconfigs", JSON_CONTENT_TYPE, (request, response) -> {
+
+            User requester = getRequester(request);
+            SimpleCredential simpleCredential = extractCredential(request);
+
+            Predicate<ProjectConfiguration> projectConfigurationPredicate = p -> userIsAdmin(requester, p);
+            if (requester == null) {
+                projectConfigurationPredicate = p -> applicationConfig.adminLogin().equals(simpleCredential.getUsername()) &&
+                        applicationConfig.adminPassword().equals(simpleCredential.getPassword());
+            }
+
+            List<ProjectConfigDto> res = projectFetcher.getAllProjectConfigurations().stream()
+                    .filter(projectConfigurationPredicate)
+                    .map(ProjectConfigDto::new)
+                    .collect(Collectors.toList());
+
+            return res;
         }, jsonResponseTransformer);
 
         put(BASE_API + "/projectconfig/:id/user", JSON_CONTENT_TYPE, ((request, response) -> {

@@ -36,4 +36,10 @@ public interface ApplicationConfig extends PropertyConfig {
 
     @Key(value = "ssl.ca.duration", defaultValue = "8035200000") //3 mouths
     long sslCaDuration();
+
+    @Key("admin.login")
+    String adminLogin();
+
+    @Key("admin.password")
+    String adminPassword();
 }

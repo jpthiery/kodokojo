@@ -40,7 +40,7 @@ public class HttpModule extends AbstractModule {
     @Provides
     @Singleton
     HttpEndpoint provideHttpEndpoint(ApplicationConfig applicationConfig, ApplicationLifeCycleManager applicationLifeCycleManager, UserAuthenticator<SimpleCredential> userAuthenticator, Set<SparkEndpoint> sparkEndpoints, VersionConfig versionConfig) {
-        HttpEndpoint httpEndpoint = new HttpEndpoint(applicationConfig.port(), userAuthenticator, sparkEndpoints, versionConfig);
+        HttpEndpoint httpEndpoint = new HttpEndpoint( userAuthenticator, applicationConfig, sparkEndpoints, versionConfig);
         applicationLifeCycleManager.addService(httpEndpoint);
         return httpEndpoint;
     }

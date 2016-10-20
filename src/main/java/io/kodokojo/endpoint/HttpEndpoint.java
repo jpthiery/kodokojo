@@ -18,6 +18,7 @@
 package io.kodokojo.endpoint;
 
 
+import io.kodokojo.config.ApplicationConfig;
 import io.kodokojo.config.VersionConfig;
 import io.kodokojo.model.User;
 import io.kodokojo.service.authentification.SimpleCredential;
@@ -44,15 +45,15 @@ public class HttpEndpoint extends AbstractSparkEndpoint implements ApplicationLi
     private final VersionConfig versionConfig;
 
     @Inject
-    public HttpEndpoint(int port, UserAuthenticator<SimpleCredential> userAuthenticator, Set<SparkEndpoint> sparkEndpoints, VersionConfig versionConfig) {
-        super(userAuthenticator);
+    public HttpEndpoint(UserAuthenticator<SimpleCredential> userAuthenticator, ApplicationConfig applicationConfig, Set<SparkEndpoint> sparkEndpoints, VersionConfig versionConfig) {
+        super(userAuthenticator, applicationConfig);
         if (sparkEndpoints == null) {
             throw new IllegalArgumentException("sparkEndpoints must be defined.");
         }
         if (versionConfig == null) {
             throw new IllegalArgumentException("versionConfig must be defined.");
         }
-        this.port = port;
+        this.port = applicationConfig.port();
         this.sparkEndpoints = sparkEndpoints;
         this.versionConfig = versionConfig;
     }
@@ -121,7 +122,10 @@ public class HttpEndpoint extends AbstractSparkEndpoint implements ApplicationLi
             basicAuthenticator.handle(request, response);
             if (basicAuthenticator.isProvideCredentials()) {
                 User user = userAuthenticator.authenticate(new SimpleCredential(basicAuthenticator.getUsername(), basicAuthenticator.getPassword()));
-                if (user == null) {
+                if (user == null &&
+                        !(basicAuthenticator.getUsername().equals(applicationConfig.adminLogin())) &&
+                        basicAuthenticator.getPassword().equals(applicationConfig.adminPassword())
+                        ) {
                     LOGGER.warn("ClientIp '{}' try to access to path '{}' with invalid credentials.", request.ip(), request.pathInfo());
                     authorizationRequiered(request, response);
                 }

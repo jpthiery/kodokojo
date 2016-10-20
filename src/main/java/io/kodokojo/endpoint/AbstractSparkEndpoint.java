@@ -18,6 +18,7 @@
 package io.kodokojo.endpoint;
 
 import com.google.gson.*;
+import io.kodokojo.config.ApplicationConfig;
 import io.kodokojo.model.User;
 import io.kodokojo.service.authentification.SimpleCredential;
 import org.slf4j.Logger;
@@ -52,9 +53,13 @@ public abstract class AbstractSparkEndpoint implements SparkEndpoint {
 
     protected final UserAuthenticator<SimpleCredential> userAuthenticator;
 
-    protected AbstractSparkEndpoint(UserAuthenticator<SimpleCredential> userAuthenticator) {
+    protected  final ApplicationConfig applicationConfig;
+
+    protected AbstractSparkEndpoint(UserAuthenticator<SimpleCredential> userAuthenticator, ApplicationConfig applicationConfig) {
         requireNonNull(userAuthenticator, "userAuthenticator must be defined.");
+        requireNonNull(applicationConfig, "applicationConfig must be defined.");
         this.userAuthenticator = userAuthenticator;
+        this.applicationConfig = applicationConfig;
     }
 
     protected SimpleCredential extractCredential(Request request) {

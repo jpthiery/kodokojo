@@ -136,6 +136,16 @@ public class TestPropertyModule extends AbstractModule {
             public long sslCaDuration() {
                 return -1;
             }
+
+            @Override
+            public String adminLogin() {
+                return "admin";
+            }
+
+            @Override
+            public String adminPassword() {
+                return "admin";
+            }
         };
     }
 
